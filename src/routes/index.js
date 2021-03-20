@@ -2,32 +2,44 @@ const express = require("express");
 
 const router = express.Router();
 
-const { registerUser, loginUser } = require("../controllers/auth");
-
 const {
   getUser,
   getDetailUser,
-  addUser,
   updateUser,
   deleteUser,
+} = require("../controllers/user");
+
+const {
   getProduct,
   getDetailProduct,
-  deleteProduct,
   getProductByPartner,
+  addProduct,
   updateProduct,
-} = require("../controllers/user");
+  deleteProduct,
+} = require("../controllers/product");
+
+const { registerUser, loginUser } = require("../controllers/auth");
+const { authenticated } = require("../middlewares/auth");
+const { checkRolePartner, checkRoleUser } = require("../middlewares/checkRole");
+const { uploadFile } = require("../middlewares/upload");
 
 router.get("/users", getUser);
 router.get("/user/:id", getDetailUser);
-router.post("/user", addUser);
 router.patch("/user/:id", updateUser);
-router.delete("/user/:id", deleteUser);
+router.delete("/user/:id", authenticated, deleteUser);
 
 router.get("/products", getProduct);
 router.get("/product/:id", getDetailProduct);
 router.get("/products/:id", getProductByPartner);
-router.patch("/product/:id", updateProduct);
-router.delete("/product/:id", deleteProduct);
+router.post(
+  "/product",
+  authenticated,
+  checkRolePartner,
+  uploadFile("imageFile"),
+  addProduct
+);
+router.patch("/product/:id", authenticated, checkRolePartner, updateProduct);
+router.delete("/product/:id", authenticated, checkRolePartner, deleteProduct);
 
 router.post("/register", registerUser);
 router.post("/login", loginUser);
