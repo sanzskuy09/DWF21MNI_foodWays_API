@@ -33,6 +33,7 @@ exports.getProduct = async (req, res) => {
   } catch (error) {
     res.status(500).send({
       status: "error",
+      message: "Server Error",
     });
   }
 };
@@ -59,6 +60,7 @@ exports.getProductByPartner = async (req, res) => {
   } catch (error) {
     res.status(500).send({
       status: "error",
+      message: "Server Error",
     });
   }
 };
@@ -74,16 +76,7 @@ exports.getDetailProduct = async (req, res) => {
       include: {
         model: User,
         as: "user",
-        attributes: {
-          exclude: [
-            "createdAt",
-            "updatedAt",
-            "image",
-            "role",
-            "password",
-            "gender",
-          ],
-        },
+        attributes: ["id", "fullName", "email", "phone", "location"],
       },
       attributes: {
         exclude: ["createdAt", "updatedAt", "UserId", "userId"],
@@ -99,6 +92,7 @@ exports.getDetailProduct = async (req, res) => {
   } catch (error) {
     res.status(500).send({
       status: "error",
+      message: "Server Error",
     });
   }
 };
@@ -134,16 +128,7 @@ exports.addProduct = async (req, res) => {
       include: {
         model: User,
         as: "user",
-        attributes: {
-          exclude: [
-            "createdAt",
-            "updatedAt",
-            "image",
-            "role",
-            "password",
-            "gender",
-          ],
-        },
+        attributes: ["id", "fullName", "email", "phone", "location"],
       },
       attributes: {
         exclude: ["createdAt", "updatedAt", "UserId", "userId"],
@@ -165,6 +150,7 @@ exports.addProduct = async (req, res) => {
   } catch (error) {
     res.status(500).send({
       status: "error",
+      message: "Server Error",
     });
   }
 };
@@ -174,7 +160,6 @@ exports.updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
     const { body } = req;
-    console.log(req.userId);
 
     const checkId = await Product.findOne({
       where: {
@@ -215,16 +200,7 @@ exports.updateProduct = async (req, res) => {
       include: {
         model: User,
         as: "user",
-        attributes: {
-          exclude: [
-            "createdAt",
-            "updatedAt",
-            "image",
-            "role",
-            "password",
-            "gender",
-          ],
-        },
+        attributes: ["id", "fullName", "email", "phone", "location"],
       },
       attributes: {
         exclude: ["createdAt", "updatedAt", "userId", "UserId"],
@@ -240,6 +216,7 @@ exports.updateProduct = async (req, res) => {
   } catch (error) {
     res.status(500).send({
       status: "error",
+      message: "Server Error",
     });
   }
 };
@@ -249,17 +226,24 @@ exports.deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const deleteProduct = await Product.destroy({
+    const checkId = await Product.findOne({
       where: {
+        id,
         userId: req.userId.id,
       },
     });
 
-    if (!deleteProduct)
-      return res.send({
-        status: "Failed",
-        message: "This product is not allowed to be deleted by you",
+    if (!checkId)
+      return res.status(400).send({
+        status: "error",
+        message: "You not allowed to delete this product",
       });
+
+    await Product.destroy({
+      where: {
+        id: checkId.id,
+      },
+    });
 
     res.send({
       status: "success",
@@ -271,6 +255,7 @@ exports.deleteProduct = async (req, res) => {
   } catch (error) {
     res.status(500).send({
       status: "error",
+      message: "Server Error",
     });
   }
 };

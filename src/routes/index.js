@@ -58,8 +58,13 @@ router.get("/orders", getOrder);
 router.get("/transactions", authenticated, getTransaction);
 router.get("/my-transactions", authenticated, getMyTransaction);
 router.get("/transaction/:id", authenticated, getDetailTransaction);
-router.post("/transaction", authenticated, addTransaction);
-router.patch("/transaction/:id", authenticated, updateTransaction);
+router.post("/transaction", authenticated, checkRolePartner, addTransaction);
+router.patch(
+  "/transaction/:id",
+  authenticated,
+  checkRolePartner,
+  updateTransaction
+);
 router.delete("/transaction/:id", authenticated, deleteTransaction);
 
 router.post("/register", registerUser);

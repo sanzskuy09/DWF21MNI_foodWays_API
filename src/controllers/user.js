@@ -20,6 +20,7 @@ exports.getUser = async (req, res) => {
   } catch (error) {
     res.status(500).send({
       status: "error",
+      message: "Server Error",
     });
   }
 };
@@ -46,6 +47,7 @@ exports.getDetailUser = async (req, res) => {
   } catch (error) {
     res.status(500).send({
       status: "error",
+      message: "Server Error",
     });
   }
 };
@@ -74,7 +76,7 @@ exports.updateUser = async (req, res) => {
 
     const checkId = await User.findOne({
       where: {
-        id: req.userId.id,
+        id,
       },
     });
 
@@ -84,17 +86,19 @@ exports.updateUser = async (req, res) => {
         message: `User with id ${id} not found`,
       });
 
-    const updateUserId = await User.update(body, {
-      where: {
-        id: req.userId.id,
-      },
-    });
-
-    if (!updateUserId)
+    if (checkId.id !== req.userId.id)
       return res.send({
         status: "Fail",
-        message: `User with id ${id} not founds`,
+        message: `You not allowed updated this user`,
       });
+
+    if (checkId.id == req.userId.id) {
+      await User.update(body, {
+        where: {
+          id: checkId.id,
+        },
+      });
+    }
 
     const user = await User.findOne({
       where: {
@@ -104,7 +108,6 @@ exports.updateUser = async (req, res) => {
         exclude: ["createdAt", "updatedAt", "password", "gender"],
       },
     });
-    // const hashedPassword = await bcrypt.hash(user.password, 10);
 
     res.send({
       status: "success",
@@ -116,6 +119,7 @@ exports.updateUser = async (req, res) => {
   } catch (error) {
     res.status(500).send({
       status: "error",
+      message: "Server Error",
     });
   }
 };
@@ -125,9 +129,21 @@ exports.deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
 
-    await User.destroy({
+    const checkId = await User.findOne({
       where: {
         id,
+      },
+    });
+
+    if (!checkId || checkId.id !== req.userId.id)
+      return res.status(400).send({
+        status: "error",
+        message: "You not allowed to delete this user",
+      });
+
+    await User.destroy({
+      where: {
+        id: checkId.id,
       },
     });
 
@@ -141,6 +157,7 @@ exports.deleteUser = async (req, res) => {
   } catch (error) {
     res.status(500).send({
       status: "error",
+      message: "Server Error",
     });
   }
 };

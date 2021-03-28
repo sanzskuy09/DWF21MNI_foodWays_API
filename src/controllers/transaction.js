@@ -40,11 +40,6 @@ exports.addTransaction = async (req, res) => {
     const ids = body.products.map((product) => product.id);
     const quantities = body.products.map((product) => product.qty);
 
-    const { id: transactionId } = await Transaction.create({
-      userId: req.userId.id,
-      status: "On the Way",
-    });
-
     const productData = await Product.findAll({
       where: {
         id: {
@@ -54,6 +49,23 @@ exports.addTransaction = async (req, res) => {
       attributes: {
         exclude: ["createdAt", "updatedAt", "userId"],
       },
+    });
+
+    const partnerId = productData[0].UserId;
+
+    const checkPartnerId = productData.every(
+      (product) => product.UserId == partnerId
+    );
+
+    if (!checkPartnerId)
+      return res.status(400).send({
+        status: "Failed",
+        message: "You must order from the same partner",
+      });
+
+    const { id: transactionId } = await Transaction.create({
+      userId: req.userId.id,
+      status: "On the Way",
     });
 
     await Order.bulkCreate(
@@ -94,7 +106,10 @@ exports.addTransaction = async (req, res) => {
       status: "success",
       message: "Success add transaction",
       data: {
-        transaction,
+        id: transaction.id,
+        userOrder: transaction.userOrder,
+        partnerId,
+        orders: transaction.orders,
       },
     });
   } catch (error) {
@@ -108,7 +123,6 @@ exports.addTransaction = async (req, res) => {
 // get All transaction By Partner
 exports.getTransaction = async (req, res) => {
   try {
-    console.log(req.userId);
     const transactions = await Transaction.findAll({
       include: [
         {
@@ -123,10 +137,7 @@ exports.getTransaction = async (req, res) => {
           include: {
             model: Product,
             as: "product",
-            where: {
-              userId: req.userId.id,
-            },
-            attributes: ["id", "title", "price", "image"],
+            attributes: ["id", "title", "price", "image", "UserId"],
           },
         },
       ],
@@ -135,10 +146,14 @@ exports.getTransaction = async (req, res) => {
       },
     });
 
+    const filterByPartnerId = transactions.filter(
+      (e) => e.orders[0]?.product?.UserId == req.userId.id
+    );
+
     res.send({
       status: "success",
       data: {
-        transactions,
+        transactions: filterByPartnerId,
       },
     });
   } catch (error) {
@@ -201,6 +216,31 @@ exports.updateTransaction = async (req, res) => {
     const { id } = req.params;
     const { body } = req;
 
+    const checkId = await Transaction.findOne({
+      where: {
+        id,
+      },
+      include: [
+        {
+          model: Order,
+          as: "orders",
+          include: {
+            model: Product,
+            as: "product",
+            attributes: ["id", "UserId"],
+          },
+        },
+      ],
+    });
+
+    const checkIdPartner = checkId.orders[0].product.UserId;
+
+    if (checkIdPartner !== req.userId.id)
+      return res.status(400).send({
+        status: "Failed",
+        message: "You cannot updated this product",
+      });
+
     await Transaction.update(body, {
       where: {
         id,
@@ -248,7 +288,7 @@ exports.updateTransaction = async (req, res) => {
   }
 };
 
-// Get Customer transaction
+// Get My transaction
 exports.getMyTransaction = async (req, res) => {
   try {
     const transactions = await Transaction.findAll({
@@ -274,7 +314,7 @@ exports.getMyTransaction = async (req, res) => {
 
     res.send({
       status: "success",
-      message: "Success",
+      message: "Success get all your transaction",
       data: {
         transactions,
       },
