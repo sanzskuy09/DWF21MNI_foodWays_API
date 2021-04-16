@@ -35,8 +35,8 @@ const { uploadFile } = require("../middlewares/upload");
 
 // Users
 router.get("/users", getUser);
-router.get("/user/:id", getDetailUser);
-router.patch("/user/:id", authenticated, updateUser);
+router.get("/user/:id", authenticated, getDetailUser);
+router.patch("/user/:id", authenticated, uploadFile("image"), updateUser);
 router.delete("/user/:id", authenticated, deleteUser);
 
 // Products
@@ -58,7 +58,7 @@ router.get("/orders", getOrder);
 router.get("/transactions", authenticated, getTransaction);
 router.get("/my-transactions", authenticated, getMyTransaction);
 router.get("/transaction/:id", authenticated, getDetailTransaction);
-router.post("/transaction", authenticated, checkRolePartner, addTransaction);
+router.post("/transaction", authenticated, addTransaction);
 router.patch(
   "/transaction/:id",
   authenticated,

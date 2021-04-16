@@ -2,13 +2,25 @@ const express = require("express");
 const Joi = require("joi");
 const { User, Product } = require("../../models");
 
+const url = "http://localhost:5000/uploads/";
+
 // Get All users
 exports.getUser = async (req, res) => {
   try {
-    const users = await User.findAll({
+    const userFromDatabase = await User.findAll({
       attributes: {
         exclude: ["createdAt", "updatedAt", "password", "gender"],
       },
+    });
+
+    const userString = JSON.stringify(userFromDatabase);
+    const userObject = JSON.parse(userString);
+    // console.log(userObject);
+    const users = userObject.map((user) => {
+      return {
+        ...user,
+        image: url + user.image,
+      };
     });
 
     res.send({
@@ -59,11 +71,11 @@ exports.updateUser = async (req, res) => {
     const { body } = req;
 
     const schema = Joi.object({
-      fullName: Joi.string(),
-      password: Joi.string().min(8),
-      gender: Joi.string(),
+      fullName: Joi.string().min(3),
+      email: Joi.string(),
       phone: Joi.string().min(7).max(13),
       location: Joi.string(),
+      image: Joi.string(),
     });
 
     const { error } = schema.validate(req.body);
@@ -92,15 +104,19 @@ exports.updateUser = async (req, res) => {
         message: `You not allowed updated this user`,
       });
 
-    if (checkId.id == req.userId.id) {
-      await User.update(body, {
+    await User.update(
+      {
+        ...body,
+        image: req.files.image && req.files.image[0].filename,
+      },
+      {
         where: {
-          id: checkId.id,
+          id,
         },
-      });
-    }
+      }
+    );
 
-    const user = await User.findOne({
+    const rawUser = await User.findOne({
       where: {
         id,
       },
@@ -108,6 +124,13 @@ exports.updateUser = async (req, res) => {
         exclude: ["createdAt", "updatedAt", "password", "gender"],
       },
     });
+
+    const userString = JSON.stringify(rawUser);
+    const userObject = JSON.parse(userString);
+    const user = {
+      ...userObject,
+      image: url + userObject.image,
+    };
 
     res.send({
       status: "success",

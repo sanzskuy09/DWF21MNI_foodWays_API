@@ -65,7 +65,7 @@ exports.addTransaction = async (req, res) => {
 
     const { id: transactionId } = await Transaction.create({
       userId: req.userId.id,
-      status: "On the Way",
+      status: "Waiting Approve",
     });
 
     await Order.bulkCreate(
@@ -142,7 +142,7 @@ exports.getTransaction = async (req, res) => {
         },
       ],
       attributes: {
-        exclude: ["createdAt", "updatedAt", "userId", "UserId"],
+        exclude: ["updatedAt", "userId", "UserId"],
       },
     });
 
@@ -238,7 +238,7 @@ exports.updateTransaction = async (req, res) => {
     if (checkIdPartner !== req.userId.id)
       return res.status(400).send({
         status: "Failed",
-        message: "You cannot updated this product",
+        message: "You cannot updated this transaction",
       });
 
     await Transaction.update(body, {
@@ -300,15 +300,22 @@ exports.getMyTransaction = async (req, res) => {
           model: Order,
           as: "orders",
           attributes: ["qty"],
-          include: {
-            model: Product,
-            as: "product",
-            attributes: ["id", "title", "price", "image"],
-          },
+          include: [
+            {
+              model: Product,
+              as: "product",
+              attributes: ["id", "title", "price", "image"],
+              include: {
+                model: User,
+                as: "user",
+                attributes: ["fullName"],
+              },
+            },
+          ],
         },
       ],
       attributes: {
-        exclude: ["createdAt", "updatedAt", "userId", "UserId"],
+        exclude: ["updatedAt", "userId", "UserId"],
       },
     });
 

@@ -121,9 +121,12 @@ exports.loginUser = async (req, res) => {
       message: "Login Success",
       data: {
         user: {
+          id: checkEmail.id,
           fullName: checkEmail.fullName,
           email: checkEmail.email,
           token,
+          phone: checkEmail.phone,
+          image: checkEmail.image,
           role: checkEmail.role,
         },
       },

@@ -1,10 +1,12 @@
 const Joi = require("joi");
 const { User, Product, Transaction } = require("../../models");
 
+const url = "http://localhost:5000/uploads/";
+
 // get All Product
 exports.getProduct = async (req, res) => {
   try {
-    const products = await Product.findAll({
+    const productsFromDB = await Product.findAll({
       include: {
         model: User,
         as: "user",
@@ -24,6 +26,14 @@ exports.getProduct = async (req, res) => {
       },
     });
 
+    const productString = JSON.stringify(productsFromDB);
+    const productObject = JSON.parse(productString);
+
+    const products = productObject.map((product) => ({
+      ...product,
+      image: url + product.image,
+    }));
+
     res.send({
       status: "success",
       data: {
@@ -42,14 +52,27 @@ exports.getProduct = async (req, res) => {
 exports.getProductByPartner = async (req, res) => {
   try {
     const { id } = req.params;
-    const products = await Product.findAll({
+    const productsFromDB = await Product.findAll({
       where: {
         userId: id,
+      },
+      include: {
+        model: User,
+        as: "user",
+        attributes: ["fullName"],
       },
       attributes: {
         exclude: ["createdAt", "updatedAt", "userId", "UserId"],
       },
     });
+
+    const productString = JSON.stringify(productsFromDB);
+    const productObject = JSON.parse(productString);
+
+    const products = productObject.map((product) => ({
+      ...product,
+      image: url + product.image,
+    }));
 
     res.send({
       status: "success",
@@ -69,7 +92,7 @@ exports.getProductByPartner = async (req, res) => {
 exports.getDetailProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    const products = await Product.findOne({
+    const productsFromDB = await Product.findOne({
       where: {
         id,
       },
@@ -82,6 +105,14 @@ exports.getDetailProduct = async (req, res) => {
         exclude: ["createdAt", "updatedAt", "UserId", "userId"],
       },
     });
+
+    const productString = JSON.stringify(productsFromDB);
+    const productObject = JSON.parse(productString);
+
+    const products = productObject.map((product) => ({
+      ...product,
+      image: url + product.image,
+    }));
 
     res.send({
       status: "success",
@@ -115,15 +146,15 @@ exports.addProduct = async (req, res) => {
         message: error.details[0].message,
       });
 
-    const product = await Product.create({
+    const productNew = await Product.create({
       ...body,
       image: req.files.imageFile[0].filename,
       userId: req.userId.id,
     });
 
-    const products = await Product.findOne({
+    const rawProduct = await Product.findOne({
       where: {
-        id: product.id,
+        id: productNew.id,
       },
       include: {
         model: User,
@@ -135,16 +166,17 @@ exports.addProduct = async (req, res) => {
       },
     });
 
-    const url = "http://localhost:5000/uploads/";
+    const productString = JSON.stringify(rawProduct);
+    const productObject = JSON.parse(productString);
+    const product = {
+      ...productObject,
+      image: url + productObject.image,
+    };
 
     res.send({
       status: "success",
       data: {
-        id: products.id,
-        title: products.title,
-        price: products.price,
-        image: url + products.image,
-        user: products.user,
+        product,
       },
     });
   } catch (error) {
